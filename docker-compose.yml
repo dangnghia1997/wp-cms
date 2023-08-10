@@ -1,0 +1,67 @@
+version: '3.1'
+
+services:
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./wordpress:/var/www/html
+      - ./wpcms.abc.pem:/var/www/html/wpcms.abc.pem
+      - ./wpcms.abc-key.pem:/var/www/html/wpcms.abc-key.pem
+    ports:
+      - 443:443
+      - 80:80
+    links:
+      - wordpress
+    networks:
+      - wpcms-local
+
+  wordpress:
+    build: .
+    volumes:
+      - ./wordpress:/var/www/html
+      - ./php/conf.d/docker-php-ext-xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini:cached
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - WORDPRESS_DB_HOST=${WORDPRESS_DB_HOST}
+      - WORDPRESS_DB_USER=${WORDPRESS_DB_USER}
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
+      - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}
+    depends_on:
+      - db
+    networks:
+      - wpcms-local
+
+  redis:
+    image: redis:6.0-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - wpcms-local
+
+  db:
+    image: mariadb:10.4
+    restart: always
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    networks:
+      - wpcms-local
+      
+volumes:
+  wordpress:
+  nginx:
+  db:
+
+networks:
+  wpcms-local:
