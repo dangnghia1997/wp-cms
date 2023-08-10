@@ -1,0 +1,2 @@
+# hatgiongviet-wp
+# wp-cms
